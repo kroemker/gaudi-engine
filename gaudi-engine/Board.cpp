@@ -7,7 +7,7 @@
 #include "CastlingRights.h"
 #include "Piece.h"
 
-Board::Board() {
+Board::Board() : zobristHasher(this) {
 	pieceListHolder[0] = &whitePieces;
 	pieceListHolder[1] = &blackPieces;
 
@@ -18,10 +18,10 @@ Board::Board() {
 	enpassantSquare = 128;
 	enpassantPiece = nullptr;
 
-	castlingRightsHolder[0] = &whiteCastlingRights;
-	castlingRightsHolder[1] = &blackCastlingRights;
-
-	colorToMove = Board::WHITE;
+	colorToMove = Color::WHITE;
+	
+	hashHistory.reserve(200);
+	hashHistory.clear();
 }
 Board::~Board() {
 	for (int i = 0; i < whitePieces.size(); i++) {
@@ -33,7 +33,7 @@ Board::~Board() {
 }
 
 void Board::loadFEN(std::string fen) {
-	int len = fen.length();
+	size_t len = fen.length();
 	int rank = 7;
 	int file = 0;
 	bool piece = false;
@@ -52,7 +52,7 @@ void Board::loadFEN(std::string fen) {
 			file += c - '0';
 		}
 		else {
-			int color = c >= 'a' ? Board::BLACK : Board::WHITE;
+			int color = c >= 'a' ? Color::BLACK : Color::WHITE;
 			int sq = rank * 16 + file;
 			Piece* piece = nullptr;
 			switch (tolower(c)) {
@@ -102,21 +102,22 @@ void Board::loadFEN(std::string fen) {
 	i++;
 	if (i < len) {
 		if (fen[i] == 'w') {
-			colorToMove = Board::WHITE;
+			colorToMove = Color::WHITE;
 		}
 		else if (fen[i] == 'b') {
-			colorToMove = Board::BLACK;
+			colorToMove = Color::BLACK;
 		}
 	}
 	i++;
 	i++;
+	castlingRights.unsetAll();
 	while ((i < len) && (fen[i] != ' ')) {
-		int color = fen[i] >= 'a' ? Board::BLACK : Board::WHITE;
+		int color = fen[i] >= 'a' ? Color::BLACK : Color::WHITE;
 		if (tolower(fen[i]) == 'k') {
-			castlingRightsHolder[color]->canKingside = true;
+			castlingRights.setCastleKingside(color);
 		}
 		else if (tolower(fen[i]) == 'q') {
-			castlingRightsHolder[color]->canQueenside = true;
+			castlingRights.setCastleQueenside(color);
 		}
 		i++;
 	}
@@ -141,6 +142,14 @@ void Board::loadFEN(std::string fen) {
 		enpassantSquare = enpassantFile + enpassantRank * 16;
 		enpassantPiece = enpassantRank == 3 ? board[enpassantSquare + 16] : board[enpassantRank - 16];
 	}
+
+	zobristHasher.hashNew();
+	hashHistory.clear();
+	moveStringHistory.clear();
+}
+
+void Board::loadStartPosition() {
+	loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
 void Board::refillBoardByPieceList() {
@@ -159,14 +168,14 @@ void Board::refillBoardByPieceList() {
 	}
 }
 
-bool Board::isMate(Color color) {
+bool Board::isMate(int color) {
 	if (!inCheck(color)) {
 		return false;
 	}
 
-	std::vector<Move> moves;
-	generateMoves(color, moves);
-	for (int i = 0; i < moves.size(); i++) {
+	Move moves[128];
+	int n = generateMoves(color, moves);
+	for (int i = 0; i < n; i++) {
 		makeMove(moves[i]);
 		if (!inCheck(color)) {
 			unmakeMove(moves[i]);
@@ -177,8 +186,8 @@ bool Board::isMate(Color color) {
 	return true;
 }
 
-bool Board::inCheck(Color color) {
-	return isAttackedBy(getKing(color)->square, invertColor(color));
+bool Board::inCheck(int color) {
+	return isAttackedBy(getKing(color)->square, Color::invert(color));
 }
 
 bool Board::sufficientMaterial() {
@@ -190,17 +199,32 @@ bool Board::sufficientMaterial() {
 	return false;
 }
 
+bool Board::isRepetition() {
+	bool f = false;
+	for (int i = 0; i < hashHistory.size(); i++) {
+		if (getHash() == hashHistory[i]) {
+			if (f) {
+				return true;
+			}
+			else {
+				f = true;
+			}
+		}
+	}
+	return false;
+}
+
 bool Board::isLegalMove(Move& move) {
-	std::vector<Move> moves;
-	generateMoves(move.color, moves);
-	for (int i = 0; i < moves.size(); i++) {
+	Move moves[128];
+	int n = generateMoves(move.color, moves);
+	for (int i = 0; i < n; i++) {
 		if (moves[i].equals(move))
 			return true;
 	}
 	return false;
 }
 
-bool Board::isAttackedBy(int square, Color color) {
+bool Board::isAttackedBy(int square, int color) {
 	std::vector<Piece*>* pieces = getPieceList(color);
 
 	for (int i = 0; i < pieces->size(); i++) {
@@ -209,7 +233,7 @@ bool Board::isAttackedBy(int square, Color color) {
 			continue;
 		}
 
-		for (int j = 0; j < current->vectorMoves.size(); j++) {
+		for (int j = 0; j < current->numVectorMoves; j++) {
 			int dest = current->square;
 			do {
 				dest += current->vectorMoves[j];
@@ -243,8 +267,12 @@ bool Board::isAttackedBy(int square, Color color) {
 	return false;
 }
 
-void Board::generateCaptures(Color color, std::vector<Move>& captures) {
-	CastlingRights* cr = getCastlingRights(color);
+int Board::generateCaptures(Move* captures) {
+	return generateCaptures(colorToMove, captures);
+}
+
+int Board::generateCaptures(int color, Move* captures) {
+	int numCaptures = 0;
 	std::vector<Piece*>* pieces = getPieceList(color);
 
 	for (int i = 0; i < pieces->size(); i++) {
@@ -253,7 +281,7 @@ void Board::generateCaptures(Color color, std::vector<Move>& captures) {
 			continue;
 		}
 
-		for (int j = 0; j < current->vectorMoves.size(); j++) {
+		for (int j = 0; j < current->numVectorMoves; j++) {
 			int dest = current->square;
 			do {
 				dest += current->vectorMoves[j];
@@ -271,17 +299,17 @@ void Board::generateCaptures(Color color, std::vector<Move>& captures) {
 							if (!isEmptySquare(dest) && (board[dest]->color != color)) {
 								// check promotion
 								if (dest >> 4 == 0 || dest >> 4 == 7) {
-									captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Queen));
-									captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Knight));
-									captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Rook));
-									captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Bishop));
+									captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Queen);
+									captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Knight);
+									captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Rook);
+									captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Bishop);
 								}
 								else {
-									captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr));
+									captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights);
 								}
 							}
 							else if (dest == enpassantSquare && enpassantPiece->color != color) {
-								captures.push_back(Move(color, current->square, dest, current, enpassantPiece, enpassantSquare, enpassantPiece, *cr));
+								captures[numCaptures++] = Move(color, current->square, dest, current, enpassantPiece, enpassantSquare, enpassantPiece, castlingRights);
 							}
 						}
 					}
@@ -290,15 +318,21 @@ void Board::generateCaptures(Color color, std::vector<Move>& captures) {
 
 				// look if capture a piece
 				if (!isEmptySquare(dest) && (board[dest]->color != color)) {
-					captures.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr));
+					captures[numCaptures++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights);
 				}
 			} while (current->sliding && isEmptySquare(dest));
 		}
 	}
+	return numCaptures;
 }
 
-void Board::generateMoves(Color color, std::vector<Move>& moves) {
-	CastlingRights* cr = getCastlingRights(color);
+
+int Board::generateMoves(Move* moves) {
+	return generateMoves(colorToMove, moves);
+}
+
+int Board::generateMoves(int color, Move* moves) {
+	int numMoves = 0;
 
 	bool incheck = inCheck(color);
 
@@ -313,17 +347,17 @@ void Board::generateMoves(Color color, std::vector<Move>& moves) {
 		// castling
 		if (current->type == Piece::King && !incheck) {
 			int dest = current->square + 2;
-			if (cr->canKingside && isEmptySquare(dest - 1) && isEmptySquare(dest) && !isAttackedBy(dest, invertColor(color)) && !isAttackedBy(dest - 1, invertColor(color))) {
-				moves.push_back(Move(color, Move::Kingside, current, board[dest + 1], enpassantSquare, enpassantPiece, *cr));
+			if (castlingRights.canCastleKingside(color) && isEmptySquare(dest - 1) && isEmptySquare(dest) && !isAttackedBy(dest, Color::invert(color)) && !isAttackedBy(dest - 1, Color::invert(color))) {
+				moves[numMoves++] = Move(color, Move::Kingside, current, board[dest + 1], dest, dest - 1, enpassantSquare, enpassantPiece, castlingRights);
 			}
 
-			int dest = current->square - 2;
-			if (cr->canQueenside && isEmptySquare(dest - 1) && isEmptySquare(dest) && isEmptySquare(dest + 1) && !isAttackedBy(dest, invertColor(color)) && !isAttackedBy(dest + 1, invertColor(color))) {
-				moves.push_back(Move(color, Move::Queenside, current, board[dest - 2], enpassantSquare, enpassantPiece, *cr));
+			dest = current->square - 2;
+			if (castlingRights.canCastleQueenside(color) && isEmptySquare(dest - 1) && isEmptySquare(dest) && isEmptySquare(dest + 1) && !isAttackedBy(dest, Color::invert(color)) && !isAttackedBy(dest + 1, Color::invert(color))) {
+				moves[numMoves++] = Move(color, Move::Queenside, current, board[dest - 2], dest, dest + 1, enpassantSquare, enpassantPiece, castlingRights);
 			}
 		}
 
-		for (int j = 0; j < current->vectorMoves.size(); j++) {
+		for (int j = 0; j < current->numVectorMoves; j++) {
 			int dest = current->square;
 			do {
 				dest += current->vectorMoves[j];
@@ -339,20 +373,20 @@ void Board::generateMoves(Color color, std::vector<Move>& moves) {
 					if (isEmptySquare(dest)) {
 						// check promotion
 						if (dest >> 4 == 0 || dest >> 4 == 7) {
-							moves.push_back(Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, *cr, Piece::Queen));
-							moves.push_back(Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, *cr, Piece::Knight));
-							moves.push_back(Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, *cr, Piece::Rook));
-							moves.push_back(Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, *cr, Piece::Bishop));
+							moves[numMoves++] = Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, castlingRights, Piece::Queen);
+							moves[numMoves++] = Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, castlingRights, Piece::Knight);
+							moves[numMoves++] = Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, castlingRights, Piece::Rook);
+							moves[numMoves++] = Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, castlingRights, Piece::Bishop);
 						}
 						else {
-							moves.push_back(Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, *cr));
+							moves[numMoves++] = Move(color, current->square, dest, current, nullptr, enpassantSquare, enpassantPiece, castlingRights);
 						}
 
 						// double move
-						if ((current->square >> 4 == 1 && color == WHITE) || (current->square >> 4 == 6 && color == BLACK)) {
+						if ((current->square >> 4 == 1 && color == Color::WHITE) || (current->square >> 4 == 6 && color == Color::BLACK)) {
 							dest += current->vectorMoves[j];
 							if (isSquareOnBoard(dest) && isEmptySquare(dest)) {
-								moves.push_back(Move(color, current->square, dest, current, nullptr, dest - current->vectorMoves[j], current, enpassantSquare, enpassantPiece, *cr));
+								moves[numMoves++] = Move(color, current->square, dest, current, nullptr, dest - current->vectorMoves[j], current, enpassantSquare, enpassantPiece, castlingRights);
 							}
 						}
 					}
@@ -364,17 +398,17 @@ void Board::generateMoves(Color color, std::vector<Move>& moves) {
 							if ((!isEmptySquare(dest)) && (board[dest]->color != color)) {
 								// check promotion
 								if (dest >> 4 == 0 || dest >> 4 == 7) {
-									moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Queen));
-									moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Knight));
-									moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Rook));
-									moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr, Piece::Bishop));
+									moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Queen);
+									moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Knight);
+									moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Rook);
+									moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights, Piece::Bishop);
 								}
 								else {
-									moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr));
+									moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights);
 								}
 							}
 							else if (dest == enpassantSquare && enpassantPiece->color != color) {
-								moves.push_back(Move(color, current->square, dest, current, enpassantPiece, enpassantSquare, enpassantPiece, *cr));
+								moves[numMoves++] = Move(color, current->square, dest, current, enpassantPiece, enpassantSquare, enpassantPiece, castlingRights);
 							}
 						}
 					}
@@ -385,11 +419,12 @@ void Board::generateMoves(Color color, std::vector<Move>& moves) {
 					break;
 				}
 
-				moves.push_back(Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, *cr));
+				moves[numMoves++] = Move(color, current->square, dest, current, board[dest], enpassantSquare, enpassantPiece, castlingRights);
 
 			} while (current->sliding && isEmptySquare(dest));
 		}
 	}
+	return numMoves;
 }
 void Board::makeMove(Move& move) {
 	// update en passant state
@@ -404,9 +439,7 @@ void Board::makeMove(Move& move) {
 		move.capturedPiece->square -= 2;
 		board[move.movingPiece->square] = move.movingPiece;
 		board[move.capturedPiece->square] = move.capturedPiece;
-		getCastlingRights(move.color)->unsetAll();
-		colorToMove = invertColor(colorToMove);
-		return;
+		castlingRights.unsetAll(move.color);
 	}
 	else if (move.castlingMove == Move::Queenside) {
 		board[move.movingPiece->square] = nullptr;
@@ -415,50 +448,54 @@ void Board::makeMove(Move& move) {
 		move.capturedPiece->square += 3;
 		board[move.movingPiece->square] = move.movingPiece;
 		board[move.capturedPiece->square] = move.capturedPiece;
-		getCastlingRights(move.color)->unsetAll();
-		colorToMove = invertColor(colorToMove);
-		return;
+		castlingRights.unsetAll(move.color);
 	}
+	else {
+		// update piece capture
+		if (move.capturedPiece != nullptr) {
+			move.capturedPiece->alive = false;
+			board[move.capturedPiece->square] = nullptr;
+			pieceCount[move.capturedPiece->color][move.capturedPiece->type]--;
 
-	// update piece capture
-	if (move.capturedPiece != nullptr) {
-		move.capturedPiece->alive = false;
-		board[move.capturedPiece->square] = nullptr;
-		pieceCount[move.capturedPiece->color][move.capturedPiece->type]--;
-
-		if (move.capturedPiece->isKingsideRook) {
-			getCastlingRights(invertColor(move.color))->canKingside = false;
+			if (move.capturedPiece->isKingsideRook) {
+				castlingRights.unsetCastleKingside(Color::invert(move.color));
+			}
+			else if (move.capturedPiece->isQueensideRook) {
+				castlingRights.unsetCastleQueenside(Color::invert(move.color));
+			}
 		}
-		else if (move.capturedPiece->isQueensideRook) {
-			getCastlingRights(invertColor(move.color))->canQueenside = false;
+
+		move.movingPiece->square = move.destination;
+
+		// check promotion
+		if (move.promotionType != Piece::None) {
+			move.movingPiece->type = move.promotionType;
+			move.movingPiece->sliding = Piece::isSliding(move.promotionType);
+			move.movingPiece->setupVectorMoves();
 		}
-	}
 
-	move.movingPiece->square = move.destination;
+		// unset castling rights
+		if (move.movingPiece->type == Piece::King) {
+			castlingRights.unsetAll(move.color);
+		}
+		else if (move.movingPiece->isKingsideRook) {
+			castlingRights.unsetCastleKingside(move.color);
+		}
+		else if (move.movingPiece->isQueensideRook) {
+			castlingRights.unsetCastleQueenside(move.color);
+		}
 
-	// check promotion
-	if (move.promotionType != Piece::None) {
-		move.movingPiece->type = move.promotionType;
-		move.movingPiece->sliding = Piece::isSliding(move.promotionType);
-		move.movingPiece->setupVectorMoves();
+		// update board
+		board[move.destination] = move.movingPiece;
+		board[move.source] = nullptr;
 	}
+	colorToMove = Color::invert(colorToMove);
 
-	// unset castling rights
-	if (move.movingPiece->type == Piece::King) {
-		getCastlingRights(invertColor(move.color))->unsetAll();
-	}
-	else if (move.movingPiece->isKingsideRook) {
-		getCastlingRights(invertColor(move.color))->canKingside = false;
-	}
-	else if (move.movingPiece->isQueensideRook) {
-		getCastlingRights(invertColor(move.color))->canQueenside = false;
-	}
-
-	// update board
-	board[move.destination] = move.movingPiece;
-	board[move.source] = nullptr;
-
-	colorToMove = invertColor(colorToMove);
+#ifdef _DEBUG
+	moveStringHistory.push_back(move.toString());
+#endif
+	hashHistory.push_back(getHash());
+	zobristHasher.updateHash(move);
 }
 void Board::unmakeMove(Move& move) {
 	//en passant
@@ -466,7 +503,7 @@ void Board::unmakeMove(Move& move) {
 	enpassantPiece = move.oldEnpassantPiece;
 
 	//castling rights
-	(*getCastlingRights(move.color)) = move.oldCastlingRights;
+	castlingRights = move.oldCastlingRights;
 
 	//update castling
 	if (move.castlingMove == Move::Kingside)
@@ -477,8 +514,6 @@ void Board::unmakeMove(Move& move) {
 		move.capturedPiece->square += 2;
 		board[move.movingPiece->square] = move.movingPiece;
 		board[move.capturedPiece->square] = move.capturedPiece;
-		colorToMove = invertColor(colorToMove);
-		return;
 	}
 	else if (move.castlingMove == Move::Queenside)
 	{
@@ -488,37 +523,41 @@ void Board::unmakeMove(Move& move) {
 		move.capturedPiece->square -= 3;
 		board[move.movingPiece->square] = move.movingPiece;
 		board[move.capturedPiece->square] = move.capturedPiece;
-		colorToMove = invertColor(colorToMove);
-		return;
+	}
+	else {
+		board[move.destination] = nullptr; // needed for enpassant capture
+
+		//update piece list
+		if (move.capturedPiece != nullptr)
+		{
+			move.capturedPiece->alive = true;
+			board[move.capturedPiece->square] = move.capturedPiece;
+			pieceCount[move.capturedPiece->color][move.capturedPiece->type]++;
+		}
+
+		move.movingPiece->square = move.source;
+
+		if (move.promotionType != Piece::None)
+		{
+			move.movingPiece->type = Piece::Pawn;
+			move.movingPiece->sliding = false;
+			move.movingPiece->setupVectorMoves();
+		}
+
+		//update board
+		board[move.source] = move.movingPiece;
 	}
 
+	colorToMove = Color::invert(colorToMove);
 
-	board[move.destination] = nullptr; // needed for enpassant capture
-
-	//update piece list
-	if (move.capturedPiece != nullptr)
-	{
-		move.capturedPiece->alive = true;
-		board[move.capturedPiece->square] = move.capturedPiece;
-		pieceCount[move.capturedPiece->color][move.capturedPiece->type]++;
-	}
-
-	move.movingPiece->square = move.source;
-
-	if (move.promotionType != Piece::None)
-	{
-		move.movingPiece->type = Piece::Pawn;
-		move.movingPiece->sliding = false;
-		move.movingPiece->setupVectorMoves();
-	}
-
-	//update board
-	board[move.source] = move.movingPiece;
-
-	colorToMove = invertColor(colorToMove);
+#ifdef _DEBUG
+	moveStringHistory.pop_back();
+#endif
+	hashHistory.pop_back();
+	zobristHasher.updateHash(move);
 }
 
-void Board::print(std::ostringstream& out) {
+void Board::print(std::ostream& out) {
 	int pos = 112;
 	while (pos >= 0)
 	{
@@ -537,17 +576,29 @@ void Board::print(std::ostringstream& out) {
 	}
 }
 
+void Board::cleanupDeadPieces()
+{
+	for (int c = 0; c < 2; c++) {
+		std::vector<Piece*>* pieces = pieceListHolder[c];
+		for (auto it = pieces->begin(); it != pieces->end(); ++it) {
+			if (!(*it)->alive) {
+				pieces->erase(it--);
+			}
+		}
+	}
+}
+
 // getters
 int Board::getColorToMove() {
 	return colorToMove;
 }
-void Board::setColorToMove(Color c) {
+void Board::setColorToMove(int c) {
 	colorToMove = c;
 }
 Piece* Board::getPiece(int pos) {
 	return board[pos];
 }
-Piece* Board::getKing(Color color) {
+Piece* Board::getKing(int color) {
 	return kings[color];
 }
 int Board::getEnpassantSquare() {
@@ -556,11 +607,14 @@ int Board::getEnpassantSquare() {
 Piece* Board::getEnpassantPiece() {
 	return enpassantPiece;
 }
-CastlingRights* Board::getCastlingRights(Color color) {
-	return castlingRightsHolder[color];
+CastlingRights Board::getCastlingRights() {
+	return castlingRights;
 }
-std::vector<Piece*>* Board::getPieceList(Color color) {
+std::vector<Piece*>* Board::getPieceList(int color) {
 	return pieceListHolder[color];
+}
+int Board::getPieceCount(int color, Piece::PieceType type) {
+	return pieceCount[color][type];
 }
 bool Board::isEmptySquare(int square) {
 	return board[square] == nullptr;
@@ -568,9 +622,75 @@ bool Board::isEmptySquare(int square) {
 bool Board::isSquareOnBoard(int square) {
 	return (square & 0x88) == 0;
 }
+int Board::convert88To64Square(int square0x88) {
+	return (square0x88 + (square0x88 & 7)) >> 1;
+}
+int Board::convert64To88Square(int square64) {
+	return square64 + (square64 & ~7);
+}
 
 std::string Board::getMoveStringAlgebraic(Move& move) {
+	if (move.castlingMove == Move::Kingside) {
+		return "O-O";
+	}
+	else if (move.castlingMove == Move::Queenside) {
+		return "O-O-O";
+	}
 
+	std::string result;
+	Move moves[128];
+	int n = generateMoves(move.color, moves);
+
+	if (move.movingPiece->type == Piece::Pawn && move.capturedPiece != nullptr) {
+		result += getFileBySquare(move.source);
+	}
+	else if (move.movingPiece->type != Piece::Pawn) {
+		result += getCharOfPiece(move.movingPiece->type);
+		bool needRank = false;
+		bool needFile = false;
+		for (int i = 0; i < n; i++) {
+			Move& m = moves[i];
+			if (m.movingPiece->type != move.movingPiece->type || m.destination != move.destination || m.equals(move)) {
+				continue;
+			}
+
+			if (getFileBySquare(m.source) == getFileBySquare(move.source)) {
+				needRank = true;
+			}
+			if (getRankBySquare(m.source) == getRankBySquare(move.source)) {
+				needFile = true;
+			}
+			if (!needRank || !needFile)
+				needFile = true;
+		}
+		if (needFile) {
+			result += getFileBySquare(move.source);
+		}
+		if (needRank) {
+			result += getRankBySquare(move.source);
+		}
+	}
+
+	if (move.capturedPiece != nullptr) {
+		result += 'x';
+	}
+	result += getFileBySquare(move.destination);
+	result += getRankBySquare(move.destination);
+
+	if (move.promotionType != Piece::None) {
+		result += tolower(getCharOfPiece(move.promotionType));
+	}
+
+	makeMove(move);
+	if (isMate(colorToMove)) {
+		result += '#';
+	}
+	else if (inCheck(colorToMove)) {
+		result += '+';
+	}
+	unmakeMove(move);
+
+	return result;
 }
 
 char Board::getFileBySquare(int square) {
@@ -578,6 +698,10 @@ char Board::getFileBySquare(int square) {
 }
 char Board::getRankBySquare(int square) {
 	return (square >> 4) + '1';
+}
+
+int Board::getSquareFromString(std::string str) {
+	return str[0] - 'a' + 16 * (str[1] - '1');
 }
 
 char Board::getCharOfPiece(Piece::PieceType type) {
@@ -599,6 +723,31 @@ char Board::getCharOfPiece(Piece::PieceType type) {
 	}
 }
 
-inline Board::Color Board::invertColor(Color c) {
-	return (Color)(c ^ 1);
+Piece::PieceType Board::getPieceTypeFromChar(char type)
+{
+	switch (type) {
+	case 'Q':
+	case 'q':
+		return Piece::Queen;
+	case 'R':
+	case 'r':
+		return Piece::Rook;
+	case 'N':
+	case 'n':
+		return Piece::Knight;
+	case 'B':
+	case 'b':
+		return Piece::Bishop;
+	case 'K':
+	case 'k':
+		return Piece::King;
+	case 'P':
+	case 'p':
+		return Piece::Pawn;
+	}
+	return Piece::None;
+}
+
+u64 Board::getHash() {
+	return zobristHasher.getHash();
 }

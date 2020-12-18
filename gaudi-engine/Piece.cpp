@@ -50,7 +50,7 @@ std::string Piece::toString() {
 		return "";
 	}
 
-	if (color == Board::WHITE) {
+	if (color == Color::WHITE) {
 		out.append("w");
 	}
 	else {
@@ -64,36 +64,31 @@ bool Piece::isSliding(PieceType type) {
 }
 
 void Piece::setupVectorMoves() {
-	int* ptr = nullptr;
 	int num = 0;
 	switch (type) {
 	case Pawn:
-		ptr = color == Board::WHITE ? sWhitePawnVectorTable : sBlackPawnVectorTable;
-		num = 1;
+		vectorMoves = color == Color::WHITE ? sWhitePawnVectorTable : sBlackPawnVectorTable;
+		numVectorMoves = 1;
 		break;
 	case Knight:
-		ptr = sKnightVectorTable;
-		num = 8;
+		vectorMoves = sKnightVectorTable;
+		numVectorMoves = 8;
 		break;
 	case King:
-		ptr = sKingVectorTable;
-		num = 8;
+		vectorMoves = sKingVectorTable;
+		numVectorMoves = 8;
 		break;
 	case Bishop:
-		ptr = sBishopVectorTable;
-		num = 4;
+		vectorMoves = sBishopVectorTable;
+		numVectorMoves = 4;
 		break;
 	case Rook:
-		ptr = sRookVectorTable;
-		num = 4;
+		vectorMoves = sRookVectorTable;
+		numVectorMoves = 4;
 		break;
 	case Queen:
-		ptr = sKnightVectorTable;
-		num = 8;
+		vectorMoves = sQueenVectorTable;
+		numVectorMoves = 8;
 		break;
-	default:
-	}
-	for (int i = 0; i < num; i++) {
-		vectorMoves.push_back(ptr[i]);
 	}
 }

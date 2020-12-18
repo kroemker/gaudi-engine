@@ -104,7 +104,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -140,7 +140,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -152,15 +152,39 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Board.cpp" />
-    <ClCompile Include="gaudi-engine.cpp" />
+    <ClCompile Include="ClockHandler.cpp" />
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="EvaluationEntry.cpp" />
+    <ClCompile Include="Evaluator.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="Move.cpp" />
+    <ClCompile Include="MoveComparator.cpp" />
     <ClCompile Include="Piece.cpp" />
+    <ClCompile Include="Searcher.cpp" />
+    <ClCompile Include="TranspositionEntry.cpp" />
+    <ClCompile Include="UCIProtocolHandler.cpp" />
+    <ClCompile Include="ZobristHasher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Board.h" />
     <ClInclude Include="CastlingRights.h" />
+    <ClInclude Include="ClockHandler.h" />
+    <ClInclude Include="Color.h" />
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="EvaluationEntry.h" />
+    <ClInclude Include="Evaluator.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="Move.h" />
+    <ClInclude Include="MoveComparator.h" />
     <ClInclude Include="Piece.h" />
+    <ClInclude Include="Searcher.h" />
+    <ClInclude Include="TableEntry.h" />
+    <ClInclude Include="HashTable.h" />
+    <ClInclude Include="TranspositionEntry.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="UCIProtocolHandler.h" />
+    <ClInclude Include="ZobristHasher.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

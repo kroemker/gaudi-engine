@@ -1,19 +1,19 @@
 #pragma once
 #include <vector>
+#include <string>
 
 class Piece
 {
 public:
 	enum PieceType {
+		King,
 		Pawn,
 		Knight,
-		King,
 		Bishop,
 		Rook,
 		Queen,
 		None
 	};
-
 
 	Piece(int color, PieceType type, int square, bool isKingsideRook, bool isQueensideRook);
 	~Piece();
@@ -30,8 +30,8 @@ public:
 	bool hasMoved;
 	bool isKingsideRook;
 	bool isQueensideRook;
-	std::vector<int> vectorMoves;
+	int* vectorMoves;
+	int numVectorMoves;
 	bool alive;
-
 };
 
