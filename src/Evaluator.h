@@ -2,8 +2,8 @@
 
 #include "types.h"
 #include "Board.h"
-#include "EvaluationEntry.h"
-#include "HashTable.h"
+#include "hashing/EvaluationEntry.h"
+#include "hashing/HashTable.h"
 
 class Evaluator
 {

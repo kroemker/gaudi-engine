@@ -114,7 +114,7 @@ int Evaluator::evaluate() {
 	for (int i = 0; i < n; i++) {
 		Move& m = moves[i];
 		if (m.capture && m.capturedPiece->type > m.movingPiece->type) {
-			s++;
+			s += 3;
 		}
 		// dont count queen mobility
 		if (m.movingPiece->type == Piece::Queen) {
@@ -126,7 +126,7 @@ int Evaluator::evaluate() {
 	for (int i = 0; i < m; i++) {
 		Move& m = moves[i];
 		if (m.capture && m.capturedPiece->type > m.movingPiece->type) {
-			s--;
+			s -= 3;
 		}
 		// dont count queen mobility
 		if (m.movingPiece->type == Piece::Queen) {

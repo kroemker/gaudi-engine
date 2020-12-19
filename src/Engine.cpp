@@ -11,12 +11,13 @@ static u64 transTableDefaultSize = 1006003;
 
 Engine::Engine() : board(), searcher(&board, &evaluator, &transTable, &log), evaluator(&board), transTable(transTableDefaultSize), log(&board, &transTable) {
 	searchDepth = 20;
-	clockHandler.setMoveTime(60000);
+	clockHandler.setMoveTime(10000);
 }
 
 Move Engine::move() {
 	board.cleanupDeadPieces();
 	int time = clockHandler.getSearchTime(board.getColorToMove());
+	log.writeDelimiter();
 	log.getStream() << "Start search with depth " << searchDepth << " and time " << (double)time / 1000.0 << "s" << std::endl;
 	searcher.search(searchDepth, time);
 	Move move = searcher.getBestMove();

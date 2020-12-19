@@ -1,6 +1,6 @@
 #pragma once
 #include "TableEntry.h"
-#include "Move.h"
+#include "../Move.h"
 
 class TranspositionEntry : public TableEntry
 {

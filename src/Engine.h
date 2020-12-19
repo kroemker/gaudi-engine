@@ -5,8 +5,8 @@
 #include "Searcher.h"
 #include "Move.h"
 #include "Log.h"
-#include "HashTable.h"
-#include "TranspositionEntry.h"
+#include "hashing/HashTable.h"
+#include "hashing/TranspositionEntry.h"
 #include "ClockHandler.h"
 
 class Engine

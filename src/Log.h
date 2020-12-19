@@ -2,14 +2,15 @@
 
 #include <fstream>
 #include "Board.h"
-#include "HashTable.h"
-#include "TranspositionEntry.h"
+#include "hashing/HashTable.h"
+#include "hashing/TranspositionEntry.h"
 
 class Log
 {
 public:
 	Log(Board* board, HashTable<TranspositionEntry>* transTable);
 	~Log();
+	void writeDelimiter();
 	void writePV();
 	void writeBoard();
 	void writeMessage(std::string str);

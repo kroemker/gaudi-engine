@@ -1,5 +1,5 @@
 #include "Searcher.h"
-#include "TranspositionEntry.h"
+
 #include <iostream>
 #include <vector>
 #include <climits>
@@ -193,7 +193,7 @@ int Searcher::pvSearch(int alpha, int beta, int depth, bool pvNode) {
 	// check mate and stalemate
 	if (!hasLegalMove) {
 		if (board->inCheck(board->getColorToMove())) {
-			return -MATE_SCORE;
+			return -MATE_SCORE * depth; // prefer near mates
 		}
 		else {
 			return 0;

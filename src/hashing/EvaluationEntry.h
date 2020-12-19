@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h"
+#include "../types.h"
 #include "TableEntry.h"
 
 class EvaluationEntry : public TableEntry

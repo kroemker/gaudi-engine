@@ -2,8 +2,8 @@
 
 #include "Move.h"
 #include "Board.h"
-#include "HashTable.h"
-#include "TranspositionEntry.h"
+#include "hashing/HashTable.h"
+#include "hashing/TranspositionEntry.h"
 
 class MoveComparator
 {

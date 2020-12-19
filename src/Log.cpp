@@ -1,6 +1,4 @@
 #include "Log.h"
-#include "HashTable.h"
-#include "TranspositionEntry.h"
 
 #include <iostream>
 #include <sstream>
@@ -13,8 +11,8 @@ Log::Log(Board* board, HashTable<TranspositionEntry>* transTable) {
 	tm* localTime = localtime(&now);
 	std::stringstream ss;
 	ss << "log_" << 1900 + localTime->tm_year << "-" << 1 + localTime->tm_mon << "-" 
-	   << localTime->tm_mday << "_" << 5 + localTime->tm_hour << "-" 
-	   << 30 + localTime->tm_min << "-" << localTime->tm_sec << ".txt";
+	   << localTime->tm_mday << "_" << localTime->tm_hour << "-" 
+	   << localTime->tm_min << "-" << localTime->tm_sec << ".txt";
 	logFile.open(ss.str());
 }
 
@@ -22,6 +20,10 @@ Log::~Log() {
 	if (logFile.is_open()) {
 		logFile.close();
 	}
+}
+
+void Log::writeDelimiter() {
+	logFile << "-------------------------------------------------------------" << std::endl;
 }
 
 void Log::writePV() {
@@ -43,7 +45,6 @@ void Log::writePVInternal() {
 }
 
 void Log::writeBoard() {
-	logFile << std::endl;
 	board->print(logFile);
 }
 void Log::writeMessage(std::string str) {

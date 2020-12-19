@@ -1,11 +1,13 @@
 #pragma once
+#include <chrono>
+
 #include "Board.h"
 #include "Evaluator.h"
 #include "MoveComparator.h"
-#include "HashTable.h"
+#include "hashing/HashTable.h"
+#include "hashing/TranspositionEntry.h"
 #include "ZobristHasher.h"
 #include "Log.h"
-#include <chrono>
 
 class Searcher
 {

@@ -15,102 +15,102 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Board.cpp">
+    <ClCompile Include="src\Board.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Piece.cpp">
+    <ClCompile Include="src\ClockHandler.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Move.cpp">
+    <ClCompile Include="src\Engine.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="ZobristHasher.cpp">
+    <ClCompile Include="src\Evaluator.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\Log.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Searcher.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Evaluator.cpp">
+    <ClCompile Include="src\Move.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="MoveComparator.cpp">
+    <ClCompile Include="src\MoveComparator.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
+    <ClCompile Include="src\Piece.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Log.cpp">
+    <ClCompile Include="src\Searcher.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="TranspositionEntry.cpp">
+    <ClCompile Include="src\UCIProtocolHandler.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="EvaluationEntry.cpp">
+    <ClCompile Include="src\ZobristHasher.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="ClockHandler.cpp">
+    <ClCompile Include="src\hashing\EvaluationEntry.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="UCIProtocolHandler.cpp">
+    <ClCompile Include="src\hashing\TranspositionEntry.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Board.h">
+    <ClInclude Include="src\Board.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Piece.h">
+    <ClInclude Include="src\CastlingRights.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="CastlingRights.h">
+    <ClInclude Include="src\ClockHandler.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Move.h">
+    <ClInclude Include="src\Color.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ZobristHasher.h">
+    <ClInclude Include="src\Engine.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Color.h">
+    <ClInclude Include="src\Evaluator.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Searcher.h">
+    <ClInclude Include="src\Log.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Evaluator.h">
+    <ClInclude Include="src\Move.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="MoveComparator.h">
+    <ClInclude Include="src\MoveComparator.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="types.h">
+    <ClInclude Include="src\Piece.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Engine.h">
+    <ClInclude Include="src\Searcher.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Log.h">
+    <ClInclude Include="src\types.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="TableEntry.h">
+    <ClInclude Include="src\UCIProtocolHandler.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="HashTable.h">
+    <ClInclude Include="src\ZobristHasher.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="TranspositionEntry.h">
+    <ClInclude Include="src\hashing\EvaluationEntry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="EvaluationEntry.h">
+    <ClInclude Include="src\hashing\HashTable.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ClockHandler.h">
+    <ClInclude Include="src\hashing\TableEntry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="UCIProtocolHandler.h">
+    <ClInclude Include="src\hashing\TranspositionEntry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
