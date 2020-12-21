@@ -1,17 +1,49 @@
 #include "Engine.h"
 #include "Board.h"
 #include "types.h"
-#include <cctype>
+#include "evaluation/DefaultEvaluator.h"
+#include "evaluation/LuaEvaluator.h"
+
 #include <string>
 #include <iostream>
+#include <chrono>
+#include <cctype>
 #include <cstdlib>
+#include <ctime>
 
-const std::string Engine::engineName = "gaudi-engine";
-static u64 transTableDefaultSize = 1006003;
+const std::string Engine::engineName = "Flagfish";
+static const u64 transTableDefaultSize = 20000001;
 
-Engine::Engine() : board(), searcher(&board, &evaluator, &transTable, &log), evaluator(&board), transTable(transTableDefaultSize), log(&board, &transTable) {
+Engine::Engine(std::string luaFile) : 
+	board(), searcher(&board, evaluator, &transTable, &log), transTable(transTableDefaultSize), log(&board, &transTable), clockHandler(&board) {
+
 	searchDepth = 20;
 	clockHandler.setMoveTime(10000);
+	if (!luaFile.empty()) {
+		luaState = luaL_newstate();
+		luaL_openlibs(luaState);
+		if (luaL_dofile(luaState, luaFile.c_str()) != LUA_OK) {
+			std::cerr << "Can't load " << luaFile << ": " << lua_tostring(luaState, -1) << std::endl;
+			luaState = nullptr;
+		}
+	}
+	else {
+		luaState = nullptr;
+	}
+
+	if (luaState == nullptr) {
+		evaluator = new DefaultEvaluator(&board);
+	}
+	else {
+		evaluator = new LuaEvaluator(&board, luaState);
+	}
+	searcher.setEvaluator(evaluator);
+}
+
+Engine::~Engine() {
+	if (evaluator != nullptr) {
+		delete evaluator;
+	}
 }
 
 Move Engine::move() {
@@ -87,6 +119,117 @@ void Engine::doMove(std::string move) {
 	}
 
 	board.makeMove(m);
+}
+
+void Engine::playSelf(int clockMode, int time, int increment) {
+	std::time_t now = std::time(nullptr);
+	tm* localTime = localtime(&now);
+
+	pgn.setWhiteName(engineName);
+	pgn.setBlackName(engineName);
+	pgn.setEvent("Self-Play");
+	pgn.setDate(1900 + localTime->tm_year, 1 + localTime->tm_mon, localTime->tm_mday);
+
+	board.loadStartPosition();
+	int wtime = time;
+	int btime = time;
+	setClockIncrement(Color::WHITE, increment);
+	setClockIncrement(Color::BLACK, increment);
+	bool gameOver = false;
+	int moves = 1;
+	while (!gameOver) {
+		// update clock
+		if (clockMode == ClockHandler::NORMAL) {
+			if (board.getColorToMove() == Color::WHITE) {
+				setClockTime(Color::WHITE, wtime);
+			}
+			else {
+				setClockTime(Color::BLACK, btime);
+			}
+		}
+		else if (clockMode == ClockHandler::MOVETIME) {
+			setMoveTime(time);
+		}
+
+		// search move
+		std::chrono::steady_clock::time_point beginSearch = std::chrono::steady_clock::now();
+		Move m = move();
+		board.unmakeMove(m);
+
+		// update time
+		if (clockMode == ClockHandler::NORMAL) {
+			std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+			if (m.color == Color::WHITE) {
+				wtime -= std::chrono::duration_cast<std::chrono::milliseconds>(now - beginSearch).count();
+				wtime += increment;
+			}
+			else {
+				btime -= std::chrono::duration_cast<std::chrono::milliseconds>(now - beginSearch).count();
+				btime += increment;
+			}
+		}
+		
+		// output move
+		pgn.addMove(board.getMoveStringAlgebraic(m, true));
+		if (board.getColorToMove() == Color::WHITE) {
+			std::cout << moves << ". " << board.getMoveStringAlgebraic(m) << " ";
+		}
+		else {
+			std::cout << board.getMoveStringAlgebraic(m);
+			if (clockMode == ClockHandler::NORMAL) {
+				std::cout << " \t" << (double)wtime / 1000.0 << "s / " << (double)btime / 1000.0 << "s";
+			}
+			std::cout << std::endl;
+			moves++;
+		}
+		board.makeMove(m);
+
+		// check game end
+		if (wtime <= 0) {
+			std::string result = "{ White out of time } 0-1";
+			std::cout << result << std::endl;
+			log.getStream() << result << std::endl;
+			pgn.setResult("0-1");
+			gameOver = true;
+		}
+		else if (btime <= 0) {
+			std::string result = "{ Black out of time } 1-0";
+			std::cout << result << std::endl;
+			log.getStream() << result << std::endl;
+			pgn.setResult("1-0");
+			gameOver = true;
+		}
+		else if (board.isMate(board.getColorToMove())) {
+			if (board.getColorToMove() == Color::BLACK) {
+				std::string result = "{ White checkmates } 1-0";
+				std::cout << result << std::endl;
+				log.getStream() << result << std::endl;
+				pgn.setResult("1-0");
+			}
+			else {
+				std::string result = "{ Black checkmates } 0-1";
+				std::cout << result << std::endl;
+				log.getStream() << result << std::endl;
+				pgn.setResult("0-1");
+			}
+			gameOver = true;
+		}
+		else if (board.isRepetition()) {
+			std::string result = "{ 3-time repetition } 1/2-1/2";
+			std::cout << result << std::endl;
+			log.getStream() << result << std::endl;
+			pgn.setResult("1/2-1/2");
+			gameOver = true;
+		}
+		else if (board.isStalemate(board.getColorToMove())) {
+			std::string result = "{ Stalemate } 1/2-1/2";
+			std::cout << result << std::endl;
+			log.getStream() << result << std::endl;
+			pgn.setResult("1/2-1/2");
+			gameOver = true;
+		}
+	}
+	pgn.writePGN();
 }
 
 Log* Engine::getLog() {
@@ -214,7 +357,7 @@ void Engine::runTests() {
 	log.writeMessage("Testing move evaluation...");
 	board.loadFEN("k7/p1p5/1p4p1/5p2/P2P4/7P/P6P/K7 w - - 0 1");
 	log.writeBoard();
-	int eval = evaluator.evaluate();
+	int eval = evaluator->evaluate();
 	log.getStream() << "Evaluation: " << (float)eval / 100.0f;
 	if (eval > 0) {
 		std::cout << "FAILED" << std::endl;

@@ -1,5 +1,5 @@
 #include "MoveComparator.h"
-#include "Evaluator.h"
+#include "evaluation/DefaultEvaluator.h"
 
 MoveComparator::MoveComparator(Board* board, HashTable<TranspositionEntry>* transTable) {
 	this->board = board;
@@ -18,15 +18,15 @@ bool MoveComparator::operator()(Move& m1, Move& m2) {
 		}
 	}
 
-	if (m1.capture && !m2.capture) {
+	if (m1.capturedPiece != nullptr && m2.capturedPiece == nullptr) {
 		return true;
 	}
-	if (!m1.capture && m2.capture) {
+	if (m1.capturedPiece == nullptr && m2.capturedPiece != nullptr) {
 		return false;
 	}
-	else if (m1.capture && m2.capture) {
-		int d1 = Evaluator::PIECE_WORTH[m1.movingPiece->type] - Evaluator::PIECE_WORTH[m1.capturedPiece->type];
-		int d2 = Evaluator::PIECE_WORTH[m2.movingPiece->type] - Evaluator::PIECE_WORTH[m2.capturedPiece->type];
+	else if (m1.capturedPiece != nullptr && m2.capturedPiece != nullptr) {
+		int d1 = DefaultEvaluator::PIECE_WORTH[m1.movingPiece->type] - DefaultEvaluator::PIECE_WORTH[m1.capturedPiece->type];
+		int d2 = DefaultEvaluator::PIECE_WORTH[m2.movingPiece->type] - DefaultEvaluator::PIECE_WORTH[m2.capturedPiece->type];
 		if (d1 != d2) {
 			return d1 < d2;
 		}

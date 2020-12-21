@@ -2,8 +2,8 @@
 
 #include <string>
 #include <fstream>
-#include "types.h"
-#include "Move.h"
+#include "../types.h"
+#include "../Move.h"
 #include "TableEntry.h"
 #include "TranspositionEntry.h"
 #include "EvaluationEntry.h"

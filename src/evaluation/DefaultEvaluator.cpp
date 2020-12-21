@@ -1,8 +1,9 @@
-#include "Evaluator.h"
-#include "Piece.h"
-#include <iostream>
+#include "DefaultEvaluator.h"
+#include "../Piece.h"
 
-const int Evaluator::PIECE_WORTH[] = { 0, 100, 280, 310, 600, 900 };
+const int DefaultEvaluator::PIECE_WORTH[] = { 0, 100, 300, 315, 500, 1000 };
+
+static const int sKingSafetyContribution[] = { 0, 4, 1, 2, 3, 1 };
 
 static const int sWhitePawnPositionalValueTable[] =
 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -34,11 +35,11 @@ static const int sKnightPositionalValueTable[] =
 
 static const int* sPawnTable[] = { sWhitePawnPositionalValueTable, sBlackPawnPositionalValueTable };
 
-Evaluator::Evaluator(Board* board, u64 tableSize) : evalTable(tableSize) {
+DefaultEvaluator::DefaultEvaluator(Board* board, u64 tableSize) : evalTable(tableSize) {
 	this->board = board;
 }
 
-int Evaluator::evaluate() {
+int DefaultEvaluator::evaluate() {
 	EvaluationEntry* evalEntry = evalTable.find(board->getHash());
 	if (evalEntry->hash == board->getHash()) {
 		return evalEntry->score;
@@ -47,43 +48,32 @@ int Evaluator::evaluate() {
 	int color = board->getColorToMove();
 	int oppColor = Color::invert(board->getColorToMove());
 	int s = 0;
+	int materialOnBoard = 0;
 
 	// material
 	for (int i = 0; i < 6; i++) {
 		s += PIECE_WORTH[i] * (board->getPieceCount(color, (Piece::PieceType)i) - board->getPieceCount(oppColor, (Piece::PieceType)i));
+		materialOnBoard += PIECE_WORTH[i] * board->getPieceCount(color, (Piece::PieceType)i) + PIECE_WORTH[i] * board->getPieceCount(oppColor, (Piece::PieceType)i);
 	}
 
 	// pawn/knight position
-	std::vector<Piece*>* myPieces = board->getPieceList(color);
 	u8 pawnsOnFiles[2][8] = { 0 };
-	for (int i = 0; i < myPieces->size(); i++) {
-		Piece* p = (*myPieces)[i];
-		if (!p->alive)
-			continue;
-		switch (p->type) {
-		case Piece::Pawn:
-			s += sPawnTable[color][p->square];
-			pawnsOnFiles[color][p->square & 7]++;
-			break;
-		case Piece::Knight:
-			s += sKnightPositionalValueTable[p->square];
-			break;
-		}
-	}
-
-	std::vector<Piece*>* oppPieces = board->getPieceList(oppColor);
-	for (int i = 0; i < oppPieces->size(); i++) {
-		Piece* p = (*oppPieces)[i];
-		if (!p->alive)
-			continue;
-		switch (p->type) {
-		case Piece::Pawn:
-			s -= sPawnTable[oppColor][p->square];
-			pawnsOnFiles[oppColor][p->square & 7]++;
-			break;
-		case Piece::Knight:
-			s -= sKnightPositionalValueTable[p->square];
-			break;
+	for (int c = 0; c < 2; c++) {
+		int sign = color == c ? 1 : -1;
+		std::vector<Piece*>* pieces = board->getPieceList(c);
+		for (int i = 0; i < pieces->size(); i++) {
+			Piece* p = (*pieces)[i];
+			if (!p->alive)
+				continue;
+			switch (p->type) {
+			case Piece::Pawn:
+				s += sign * sPawnTable[c][p->square];
+				pawnsOnFiles[c][p->square & 7]++;
+				break;
+			case Piece::Knight:
+				s += sign * sKnightPositionalValueTable[p->square];
+				break;
+			}
 		}
 	}
 
@@ -113,11 +103,11 @@ int Evaluator::evaluate() {
 	int n = board->generateMoves(color, moves);
 	for (int i = 0; i < n; i++) {
 		Move& m = moves[i];
-		if (m.capture && m.capturedPiece->type > m.movingPiece->type) {
+		if (m.capturedPiece != nullptr && m.capturedPiece->type > m.movingPiece->type) {
 			s += 3;
 		}
-		// dont count queen mobility
-		if (m.movingPiece->type == Piece::Queen) {
+		// dont count king/queen mobility
+		if (m.movingPiece->type == Piece::Queen || m.movingPiece->type == Piece::King) {
 			s--;
 		}
 	}
@@ -125,11 +115,11 @@ int Evaluator::evaluate() {
 	int m = board->generateMoves(oppColor, moves);
 	for (int i = 0; i < m; i++) {
 		Move& m = moves[i];
-		if (m.capture && m.capturedPiece->type > m.movingPiece->type) {
+		if (m.capturedPiece != nullptr && m.capturedPiece->type > m.movingPiece->type) {
 			s -= 3;
 		}
-		// dont count queen mobility
-		if (m.movingPiece->type == Piece::Queen) {
+		// dont count king/queen mobility
+		if (m.movingPiece->type == Piece::Queen || m.movingPiece->type == Piece::King) {
 			s++;
 		}
 	}

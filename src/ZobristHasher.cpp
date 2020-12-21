@@ -59,7 +59,7 @@ void ZobristHasher::updateHash(Move& m) {
 			hash ^= table[offset + dsquare + m.promotionType * 64]; // place promo piece on dest
 		}
 
-		if (m.capture)
+		if (m.capturedPiece != nullptr)
 		{
 			offset = m.capturedPiece->color * 64 * 6;
 			int type = m.capturedPiece->type;

@@ -19,6 +19,7 @@ public:
 	void refillBoardByPieceList();
 
 	bool isMate(int color);
+	bool isStalemate(int color);
 	bool inCheck(int color);
 	bool sufficientMaterial();
 	bool isRepetition();
@@ -45,11 +46,13 @@ public:
 	CastlingRights getCastlingRights();
 	std::vector<Piece*>* getPieceList(int color); 
 	int getPieceCount(int color, Piece::PieceType type);
+	int getTotalPieceCount(Piece::PieceType type);
 	u64 getHash();
+	int getNumberOfMoves();
 	bool isEmptySquare(int square);
 	bool isSquareOnBoard(int square);
 
-	std::string getMoveStringAlgebraic(Move& move);
+	std::string getMoveStringAlgebraic(Move & move, bool requireUpperCasePromotionType = false);
 
 	static char getFileBySquare(int square);
 	static char getRankBySquare(int square);

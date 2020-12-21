@@ -40,7 +40,6 @@ public:
 
 	Piece* movingPiece;
 	Piece* capturedPiece;
-	bool capture;
 
 	Piece* enpassantPiece;
 	Piece* oldEnpassantPiece;

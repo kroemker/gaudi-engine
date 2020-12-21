@@ -1,4 +1,5 @@
 #include "Searcher.h"
+#include "evaluation/DefaultEvaluator.h"
 
 #include <iostream>
 #include <vector>
@@ -34,7 +35,7 @@ void Searcher::search(int depth, int timeLimitMs) {
 		std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 		int timeLeft = timeLimit - std::chrono::duration_cast<std::chrono::milliseconds>(now - beginSearch).count();
 		int lastIterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSearch).count();
-		int nextIterationEstimate = lastIterationTime * d;
+		int nextIterationEstimate = lastIterationTime * 3; //d;
 		if (timeUp) {
 			if (d == 2) {
 				log->writeMessage("Exiting in first iteration. Choosing random move...");
@@ -225,7 +226,7 @@ int Searcher::quiesce(int alpha, int beta) {
 	}
 
 	// check if capturing a queen could raise alpha 
-	if (standPattern + Evaluator::PIECE_WORTH[Piece::Queen] < alpha) {
+	if (standPattern + DefaultEvaluator::PIECE_WORTH[Piece::Queen] < alpha) {
 		return alpha;
 	}
 
@@ -246,7 +247,7 @@ int Searcher::quiesce(int alpha, int beta) {
 			return MATE_SCORE;
 		}
 		// delta pruning
-		if (standPattern + Evaluator::PIECE_WORTH[m.capturedPiece->type] + 200 < alpha) {
+		if (standPattern + DefaultEvaluator::PIECE_WORTH[m.capturedPiece->type] + 200 < alpha) {
 			continue;
 		}
 
@@ -275,6 +276,10 @@ int Searcher::quiesce(int alpha, int beta) {
 void Searcher::checkTimeUp() {
 	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 	timeUp = std::chrono::duration_cast<std::chrono::milliseconds>(now - beginSearch).count() > timeLimit;
+}
+
+void Searcher::setEvaluator(Evaluator* evaluator) {
+	this->evaluator = evaluator;
 }
 
 void Searcher::test(std::string fen, int depth) {

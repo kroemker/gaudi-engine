@@ -16,7 +16,6 @@ Move::Move(int color, int source, int destination, Piece* movingPiece, Piece* ca
 	this->oldCastlingRights = oldCastlingRights;
 	this->castlingMove = CastlingMove::None;
 	this->promotionType = Piece::None;
-	this->capture = capturedPiece != nullptr;
 }
 // castling move
 Move::Move(int color, CastlingMove castlingMove, Piece* king, Piece* rook, int kingDest, int rookDest, int oldEnpassantSquare, Piece* oldEnpassantPiece, CastlingRights oldCastlingRights) {
@@ -49,7 +48,6 @@ Move::Move(int color, int source, int destination, Piece* movingPiece, Piece* ca
 	this->oldCastlingRights = oldCastlingRights;
 	this->castlingMove = CastlingMove::None;
 	this->promotionType = promotionType;
-	this->capture = capturedPiece != nullptr;
 
 }
 // double pawn move
@@ -66,7 +64,6 @@ Move::Move(int color, int source, int destination, Piece* movingPiece, Piece* ca
 	this->oldCastlingRights = oldCastlingRights;
 	this->castlingMove = CastlingMove::None;
 	this->promotionType = Piece::None;
-	this->capture = capturedPiece != nullptr;
 }
 
 std::string Move::toString() {

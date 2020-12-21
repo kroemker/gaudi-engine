@@ -1,4 +1,7 @@
 #pragma once
+
+#include "Board.h"
+
 class ClockHandler
 {
 public:
@@ -6,6 +9,8 @@ public:
 		MOVETIME,
 		NORMAL
 	};
+
+	ClockHandler(Board * board);
 
 	int getSearchTime(int color);
 	void setClockTime(int color, int timeMs);
@@ -17,5 +22,7 @@ private:
 	int increment[2];
 	int moveTime;
 	int type;
+
+	Board* board;
 };
 

@@ -186,6 +186,26 @@ bool Board::isMate(int color) {
 	return true;
 }
 
+bool Board::isStalemate(int color)
+{
+	if (inCheck(color)) {
+		return false;
+	}
+
+	Move moves[128];
+	int n = generateMoves(color, moves);
+	for (int i = 0; i < n; i++) {
+		makeMove(moves[i]);
+		if (inCheck(color)) {
+			unmakeMove(moves[i]);
+			continue;
+		}
+		unmakeMove(moves[i]);
+		return false;
+	}
+	return true;
+}
+
 bool Board::inCheck(int color) {
 	return isAttackedBy(getKing(color)->square, Color::invert(color));
 }
@@ -616,6 +636,12 @@ std::vector<Piece*>* Board::getPieceList(int color) {
 int Board::getPieceCount(int color, Piece::PieceType type) {
 	return pieceCount[color][type];
 }
+int Board::getTotalPieceCount(Piece::PieceType type) {
+	return pieceCount[Color::WHITE][type] + pieceCount[Color::BLACK][type];
+}
+int Board::getNumberOfMoves() {
+	return hashHistory.size();
+}
 bool Board::isEmptySquare(int square) {
 	return board[square] == nullptr;
 }
@@ -629,7 +655,7 @@ int Board::convert64To88Square(int square64) {
 	return square64 + (square64 & ~7);
 }
 
-std::string Board::getMoveStringAlgebraic(Move& move) {
+std::string Board::getMoveStringAlgebraic(Move& move, bool requireUpperCasePromotionType) {
 	if (move.castlingMove == Move::Kingside) {
 		return "O-O";
 	}
@@ -678,7 +704,12 @@ std::string Board::getMoveStringAlgebraic(Move& move) {
 	result += getRankBySquare(move.destination);
 
 	if (move.promotionType != Piece::None) {
-		result += tolower(getCharOfPiece(move.promotionType));
+		if (requireUpperCasePromotionType) {
+			result += toupper(getCharOfPiece(move.promotionType));
+		}
+		else {
+			result += tolower(getCharOfPiece(move.promotionType));
+		}
 	}
 
 	makeMove(move);

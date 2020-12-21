@@ -2,7 +2,7 @@
 #include <chrono>
 
 #include "Board.h"
-#include "Evaluator.h"
+#include "evaluation/Evaluator.h"
 #include "MoveComparator.h"
 #include "hashing/HashTable.h"
 #include "hashing/TranspositionEntry.h"
@@ -23,6 +23,7 @@ public:
 	int quiesce(int alpha, int beta);
 
 	void checkTimeUp();
+	void setEvaluator(Evaluator* evaluator);
 
 	void test(std::string fen, int depth);
 	void assertBoardHash(u64 should);
