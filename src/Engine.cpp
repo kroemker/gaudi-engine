@@ -11,19 +11,20 @@
 #include <cstdlib>
 #include <ctime>
 
-const std::string Engine::engineName = "Flagfish";
-static const u64 transTableDefaultSize = 20000001;
+Engine::Engine(Configuration* configuration) :
+	searcher(&board, evaluator, &transTable, &log), 
+	transTable(configuration->transpositionTableSize), 
+	log(&board, &transTable, configuration->path + "logs/"), 
+	clockHandler(&board) {
 
-Engine::Engine(std::string luaFile) : 
-	board(), searcher(&board, evaluator, &transTable, &log), transTable(transTableDefaultSize), log(&board, &transTable), clockHandler(&board) {
-
+	engineName = configuration->engineName;
 	searchDepth = 20;
 	clockHandler.setMoveTime(10000);
-	if (!luaFile.empty()) {
+	if (!configuration->luaFilename.empty()) {
 		luaState = luaL_newstate();
 		luaL_openlibs(luaState);
-		if (luaL_dofile(luaState, luaFile.c_str()) != LUA_OK) {
-			std::cerr << "Can't load " << luaFile << ": " << lua_tostring(luaState, -1) << std::endl;
+		if (luaL_dofile(luaState, configuration->luaFilename.c_str()) != LUA_OK) {
+			std::cerr << "Can't load " << configuration->luaFilename << ": " << lua_tostring(luaState, -1) << std::endl;
 			luaState = nullptr;
 		}
 	}
@@ -32,10 +33,14 @@ Engine::Engine(std::string luaFile) :
 	}
 
 	if (luaState == nullptr) {
-		evaluator = new DefaultEvaluator(&board);
+		evaluator = new DefaultEvaluator(&board, configuration->evaluationTableSize);
+		std::cerr << "Using default evaluation..." << std::endl;
+		log.writeMessage("Using default evaluation...");
 	}
 	else {
-		evaluator = new LuaEvaluator(&board, luaState);
+		evaluator = new LuaEvaluator(&board, luaState, configuration->evaluationTableSize);
+		std::cerr << "Using custom lua evaluation..." << std::endl;
+		log.writeMessage("Using custom lua evaluation...");
 	}
 	searcher.setEvaluator(evaluator);
 }
@@ -366,4 +371,19 @@ void Engine::runTests() {
 		std::cout << "SUCCESS" << std::endl;
 	}
 
+}
+
+void Engine::evaluatePosition(std::string fen) {
+	if (!fen.empty()) {
+		board.loadFEN(fen);
+	}
+	else {
+		board.loadStartPosition();
+	}
+
+	std::cout << "Testing evaluation for position " << fen << std::endl;
+	board.print(std::cout);
+	int score = evaluator->evaluate();
+	score = board.getColorToMove() == Color::WHITE ? score : -score;
+	std::cout << "Evaluation score: " << (double)score / 100.0 << std::endl;
 }

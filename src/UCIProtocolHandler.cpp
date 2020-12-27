@@ -1,4 +1,5 @@
 #include "UCIProtocolHandler.h"
+#include "Helpers.h"
 
 #include <iostream>
 #include <algorithm>
@@ -20,10 +21,10 @@ void UCIProtocolHandler::run() {
 		std::getline(std::cin, line);
 		engine->getLog()->writeMessage("Server: " + line);
 
-		std::vector<std::string> parts = splitString(line);
+		std::vector<std::string> parts = Helpers::splitString(line);
 
 		if (parts[0] == "uci") {
-			send("id name " + Engine::engineName);
+			send("id name " + engine->engineName);
 			send("id author kroemker");
 			send("uciok");
 		}
@@ -87,33 +88,4 @@ void UCIProtocolHandler::run() {
 void UCIProtocolHandler::send(std::string s) {
 	std::cout << s << std::endl;
 	engine->getLog()->writeMessage("Engine: " + s);
-}
-
-std::vector<std::string> UCIProtocolHandler::splitString(std::string str) {
-	std::string::iterator new_end = std::unique(str.begin(), str.end(), [](const char &x, const char &y) {
-		return x == y and x == ' ';
-	});
-
-	str.erase(new_end, str.end());
-
-	while (str[str.length() - 1] == ' ') {
-		str.pop_back();
-	}
-
-	std::vector<std::string> splits;
-	char delimiter = ' ';
-
-	size_t i = 0;
-	size_t pos = str.find(delimiter);
-
-	while (pos != std::string::npos) {
-		splits.push_back(str.substr(i, pos - i));
-
-		i = pos + 1;
-		pos = str.find(delimiter, i);
-	}
-
-	splits.push_back(str.substr(i, std::min(pos, str.length()) - i + 1));
-
-	return splits;
 }

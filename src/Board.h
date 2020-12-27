@@ -7,6 +7,9 @@
 #include "Piece.h"
 #include "Color.h"
 #include "ZobristHasher.h"
+#include "AttackMap.h"
+#include "hashing/HashTable.h"
+#include "hashing/AttackMapEntry.h"
 
 class Board
 {
@@ -66,6 +69,7 @@ private:
 	int pieceCount[2][6];
 
 	int colorToMove;
+	AttackMap attackMap;
 
 	int enpassantSquare;
 	Piece* enpassantPiece;

@@ -8,7 +8,7 @@
 class Log
 {
 public:
-	Log(Board* board, HashTable<TranspositionEntry>* transTable);
+	Log(Board* board, HashTable<TranspositionEntry>* transTable, std::string path = "./");
 	~Log();
 	void writeDelimiter();
 	void writePV();

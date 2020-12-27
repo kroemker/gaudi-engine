@@ -4,13 +4,13 @@
 #include <sstream>
 #include <ctime>
 
-Log::Log(Board* board, HashTable<TranspositionEntry>* transTable) {
+Log::Log(Board* board, HashTable<TranspositionEntry>* transTable, std::string path) {
 	this->board = board;
 	this->transTable = transTable;
 	std::time_t now = std::time(nullptr);
 	tm* localTime = localtime(&now);
 	std::stringstream ss;
-	ss << "log_" << 1900 + localTime->tm_year << "-" << 1 + localTime->tm_mon << "-" 
+	ss << path << "log_" << 1900 + localTime->tm_year << "-" << 1 + localTime->tm_mon << "-" 
 	   << localTime->tm_mday << "_" << localTime->tm_hour << "-" 
 	   << localTime->tm_min << "-" << localTime->tm_sec << ".txt";
 	logFile.open(ss.str());

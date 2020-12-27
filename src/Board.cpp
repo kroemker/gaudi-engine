@@ -19,7 +19,8 @@ Board::Board() : zobristHasher(this) {
 	enpassantPiece = nullptr;
 
 	colorToMove = Color::WHITE;
-	
+	attackMap = { 0 };
+
 	hashHistory.reserve(200);
 	hashHistory.clear();
 }
@@ -245,46 +246,46 @@ bool Board::isLegalMove(Move& move) {
 }
 
 bool Board::isAttackedBy(int square, int color) {
-	std::vector<Piece*>* pieces = getPieceList(color);
+	if (attackMap.map[color] == 0) {
+		std::vector<Piece*>* pieces = getPieceList(color);
 
-	for (int i = 0; i < pieces->size(); i++) {
-		Piece* current = (*pieces)[i];
-		if (!current->alive) {
-			continue;
-		}
+		for (int i = 0; i < pieces->size(); i++) {
+			Piece* current = (*pieces)[i];
+			if (!current->alive) {
+				continue;
+			}
 
-		for (int j = 0; j < current->numVectorMoves; j++) {
-			int dest = current->square;
-			do {
-				dest += current->vectorMoves[j];
+			for (int j = 0; j < current->numVectorMoves; j++) {
+				int dest = current->square;
+				do {
+					dest += current->vectorMoves[j];
 
-				// make sure we don't move off the board
-				if (!isSquareOnBoard(dest)) {
-					break;
-				}
-
-				// special rules for pawns
-				if (current->type == Piece::Pawn) {
-					dest = current->square + current->vectorMoves[j] - 1;
-					if (dest == square) {
-						return true;
+					// make sure we don't move off the board
+					if (!isSquareOnBoard(dest)) {
+						break;
 					}
 
-					dest = current->square + current->vectorMoves[j] + 1;
-					if (dest == square) {
-						return true;
+					// special rules for pawns
+					if (current->type == Piece::Pawn) {
+						dest = current->square + current->vectorMoves[j] - 1;
+						if (isSquareOnBoard(dest)) {
+							attackMap.map[color] |= ((u64)1 << convert88To64Square(dest));
+						}
+
+						dest = current->square + current->vectorMoves[j] + 1;
+						if (isSquareOnBoard(dest)) {
+							attackMap.map[color] |= ((u64)1 << convert88To64Square(dest));
+						}
+
+						break;
 					}
 
-					break;
-				}
-
-				if (dest == square) {
-					return true;
-				}
-			} while (current->sliding && isEmptySquare(dest));
+					attackMap.map[color] |= ((u64)1 << convert88To64Square(dest));
+				} while (current->sliding && isEmptySquare(dest));
+			}
 		}
 	}
-	return false;
+	return attackMap.map[color] & ((u64)1 << convert88To64Square(square));
 }
 
 int Board::generateCaptures(Move* captures) {
@@ -510,6 +511,7 @@ void Board::makeMove(Move& move) {
 		board[move.source] = nullptr;
 	}
 	colorToMove = Color::invert(colorToMove);
+	attackMap = { 0 };
 
 #ifdef _DEBUG
 	moveStringHistory.push_back(move.toString());
@@ -569,6 +571,7 @@ void Board::unmakeMove(Move& move) {
 	}
 
 	colorToMove = Color::invert(colorToMove);
+	attackMap = { 0 };
 
 #ifdef _DEBUG
 	moveStringHistory.pop_back();

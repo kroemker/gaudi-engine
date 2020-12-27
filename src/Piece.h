@@ -1,11 +1,12 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "types.h"
 
 class Piece
 {
 public:
-	enum PieceType {
+	enum PieceType : u8 {
 		King,
 		Pawn,
 		Knight,

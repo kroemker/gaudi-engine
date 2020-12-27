@@ -4,6 +4,7 @@
 
 #include <lua.hpp>
 
+#include "Configuration.h"
 #include "Board.h"
 #include "Searcher.h"
 #include "Move.h"
@@ -17,9 +18,9 @@
 class Engine
 {
 public:
-	static const std::string engineName;
+	std::string engineName;
 
-	Engine(std::string luaFile = "");
+	Engine(Configuration* configuration);
 	~Engine();
 	Move move();
 	void startNewGame();
@@ -32,6 +33,7 @@ public:
 	void setMoveTime(int timeMs);
 	void setSearchDepth(int depth);
 	void runTests();
+	void evaluatePosition(std::string fen);
 private:
 	Board board;
 	Searcher searcher;

@@ -35,6 +35,8 @@ static const int sKnightPositionalValueTable[] =
 
 static const int* sPawnTable[] = { sWhitePawnPositionalValueTable, sBlackPawnPositionalValueTable };
 
+static const int queenVectorMoves[] = { -1, 1, 16, -16, -15, -17, 15, 17 };
+
 DefaultEvaluator::DefaultEvaluator(Board* board, u64 tableSize) : evalTable(tableSize) {
 	this->board = board;
 }
@@ -125,6 +127,23 @@ int DefaultEvaluator::evaluate() {
 	}
 	// move count
 	s += (n - m);
+
+	// king safety
+	for (int c = 0; c < 2; c++) {
+		int sign = color == c ? 1 : -1;
+		Piece* king = board->getKing(c);
+		for (int i = 0; i < 8; i++) {
+			int sq = king->square + queenVectorMoves[i];
+			while (board->isSquareOnBoard(sq)) {
+				Piece* hitPiece;
+				if ((hitPiece = board->getPiece(sq)) != nullptr && hitPiece->color == c) {
+					break;
+				}
+				s -= sign;
+				sq += queenVectorMoves[i];
+			}
+		}
+	}
 
 	evalTable.store(EvaluationEntry(board->getHash(), s));
 

@@ -9,11 +9,10 @@
 class LuaEvaluator : public Evaluator
 {
 public:
-	LuaEvaluator(Board* board, lua_State* luaState, u64 tableSize = 10000001);
+	LuaEvaluator(Board* board, lua_State* luaState, u64 tableSize = 1000001);
 	int evaluate();
 private:
 	Board* board;
 	lua_State* luaState;
 	HashTable<EvaluationEntry> evalTable;
 };
-

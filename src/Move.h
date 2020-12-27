@@ -12,7 +12,7 @@ class Board;
 class Move
 {
 public:
-	enum CastlingMove {
+	enum CastlingMove : u8 {
 		Kingside,
 		Queenside,
 		None
@@ -38,16 +38,15 @@ public:
 	u8 castleRookSource;
 	u8 castleRookDestination;
 
+	Piece::PieceType promotionType;
+	CastlingMove castlingMove;
+	CastlingRights oldCastlingRights;
+
 	Piece* movingPiece;
 	Piece* capturedPiece;
 
 	Piece* enpassantPiece;
 	Piece* oldEnpassantPiece;
-
-	CastlingMove castlingMove;
-	CastlingRights oldCastlingRights;
-
-	Piece::PieceType promotionType;
 
 	std::string toString();
 	bool equals(Move& other);

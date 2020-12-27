@@ -11,8 +11,6 @@ public:
 	void run();
 	void send(std::string s);
 private:
-	std::vector<std::string> splitString(std::string str);
-
 	Engine* engine;
 };
 

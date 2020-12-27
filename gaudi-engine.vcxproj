@@ -134,13 +134,16 @@
   <ItemGroup>
     <ClCompile Include="src\Board.cpp" />
     <ClCompile Include="src\ClockHandler.cpp" />
+    <ClCompile Include="src\Configuration.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\evaluation\DefaultEvaluator.cpp" />
     <ClCompile Include="src\evaluation\Evaluator.cpp" />
     <ClCompile Include="src\evaluation\LuaEvaluator.cpp" />
+    <ClCompile Include="src\hashing\AttackMapEntry.cpp" />
     <ClCompile Include="src\hashing\EvaluationEntry.cpp" />
     <ClCompile Include="src\hashing\TranspositionEntry.cpp" />
     <ClCompile Include="src\Log.cpp" />
+    <ClCompile Include="src\luafuncs.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Move.cpp" />
     <ClCompile Include="src\MoveComparator.cpp" />
@@ -155,15 +158,19 @@
     <ClInclude Include="src\CastlingRights.h" />
     <ClInclude Include="src\ClockHandler.h" />
     <ClInclude Include="src\Color.h" />
+    <ClInclude Include="src\Configuration.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\evaluation\DefaultEvaluator.h" />
     <ClInclude Include="src\evaluation\Evaluator.h" />
     <ClInclude Include="src\evaluation\LuaEvaluator.h" />
+    <ClInclude Include="src\hashing\AttackMapEntry.h" />
     <ClInclude Include="src\hashing\EvaluationEntry.h" />
     <ClInclude Include="src\hashing\HashTable.h" />
     <ClInclude Include="src\hashing\TableEntry.h" />
     <ClInclude Include="src\hashing\TranspositionEntry.h" />
+    <ClInclude Include="src\Helpers.h" />
     <ClInclude Include="src\Log.h" />
+    <ClInclude Include="src\luafuncs.h" />
     <ClInclude Include="src\Move.h" />
     <ClInclude Include="src\MoveComparator.h" />
     <ClInclude Include="src\PGN.h" />
