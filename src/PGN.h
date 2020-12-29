@@ -13,7 +13,7 @@ public:
 	void setWhiteName(std::string name);
 	void setBlackName(std::string name);
 	void addMove(std::string move);
-	void writePGN(std::string name = "");
+	void writePGN(std::string path = "./", std::string name = "");
 private:
 	std::string event;
 	std::string result;

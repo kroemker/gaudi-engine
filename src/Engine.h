@@ -42,6 +42,7 @@ private:
 	Log log;
 	PGN pgn;
 	Evaluator* evaluator;
+	Configuration* configuration;
 	lua_State* luaState;
 	int searchDepth;
 };

@@ -17,13 +17,15 @@ Engine::Engine(Configuration* configuration) :
 	log(&board, &transTable, configuration->path + "logs/"), 
 	clockHandler(&board) {
 
+	this->configuration = configuration;
 	engineName = configuration->engineName;
 	searchDepth = 20;
 	clockHandler.setMoveTime(10000);
 	if (!configuration->luaFilename.empty()) {
 		luaState = luaL_newstate();
 		luaL_openlibs(luaState);
-		if (luaL_dofile(luaState, configuration->luaFilename.c_str()) != LUA_OK) {
+		std::string filepath = configuration->path + configuration->luaFilename;
+		if (luaL_dofile(luaState, filepath.c_str()) != LUA_OK) {
 			std::cerr << "Can't load " << configuration->luaFilename << ": " << lua_tostring(luaState, -1) << std::endl;
 			luaState = nullptr;
 		}
@@ -234,7 +236,7 @@ void Engine::playSelf(int clockMode, int time, int increment) {
 			gameOver = true;
 		}
 	}
-	pgn.writePGN();
+	pgn.writePGN(configuration->path + "pgns/");
 }
 
 Log* Engine::getLog() {

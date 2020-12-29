@@ -35,7 +35,7 @@ void PGN::addMove(std::string move) {
 	numMoves++;
 }
 
-void PGN::writePGN(std::string name) {
+void PGN::writePGN(std::string path, std::string name) {
 	std::ofstream pgnFile;
 
 	if (name.empty()) {
@@ -43,7 +43,7 @@ void PGN::writePGN(std::string name) {
 		tm* localTime = localtime(&now);
 		std::stringstream ss;
 		setDate(1900 + localTime->tm_year, 1 + localTime->tm_mon, localTime->tm_mday);
-		ss << "log_" << year << "-" << month << "-" << day << "_" <<
+		ss << path << "log_" << year << "-" << month << "-" << day << "_" <<
 			localTime->tm_hour << "-" << localTime->tm_min << "-" << localTime->tm_sec << ".pgn";
 
 		pgnFile.open(ss.str());
