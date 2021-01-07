@@ -109,18 +109,26 @@ void Engine::doMove(std::string move) {
 	Piece* srcPiece = board.getPiece(src);
 	Piece* destPiece = board.getPiece(dest);
 
+	// castling
 	if ((move == "e1g1" && king->square == board.getSquareFromString("e1")) || (move == "e8g8" && king->square == board.getSquareFromString("e8"))) {
 		m = Move(color, Move::Kingside, king, kingRook, dest, dest - 1, enpSq, enpP, cr);
 	}
 	else if ((move == "e1c1" && king->square == board.getSquareFromString("e1")) || (move == "e8c8" && king->square == board.getSquareFromString("e8"))) {
 		m = Move(color, Move::Queenside, king, queenRook, dest, dest + 1, enpSq, enpP, cr);
 	}
+	// promotion
 	else if (promotionType != Piece::None) {
 		m = Move(color, src, dest, srcPiece, destPiece, enpSq, enpP, cr, promotionType);
 	}
-	else if (board.getPiece(src)->type == Piece::Pawn && dest == enpSq) {
+	// enpassant capture
+	else if (srcPiece->type == Piece::Pawn && dest == enpSq) {
 		m = Move(color, src, dest, srcPiece, enpP, enpSq, enpP, cr);
 	}
+	// double pawn move
+	else if (srcPiece->type == Piece::Pawn && (src + 0x20 == dest || src - 0x20 == dest)) {
+		m = Move(color, src, dest, srcPiece, nullptr, src + 0x20 == dest ? src + 0x10 : src - 0x10, srcPiece, enpSq, enpP, cr);
+	}
+	// normal move
 	else {
 		m = Move(color, src, dest, srcPiece, destPiece, enpSq, enpP, cr);
 	}
@@ -388,4 +396,11 @@ void Engine::evaluatePosition(std::string fen) {
 	int score = evaluator->evaluate();
 	score = board.getColorToMove() == Color::WHITE ? score : -score;
 	std::cout << "Evaluation score: " << (double)score / 100.0 << std::endl;
+}
+
+void Engine::showBoardDebug() {
+	std::cout << "-- Board Debug Info ------------------------" << std::endl;
+	std::cout << "Castling rights: " << board.getCastlingRights().getString() << std::endl;
+	std::cout << "Enpassant square: " << (board.getEnpassantSquare() < 128 ? Board::getStringFromSquare(board.getEnpassantSquare()) : "null") << '(' << board.getEnpassantSquare() << ')' << std::endl;
+	board.print(std::cout);
 }

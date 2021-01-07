@@ -34,6 +34,7 @@ public:
 	void setSearchDepth(int depth);
 	void runTests();
 	void evaluatePosition(std::string fen);
+	void showBoardDebug();
 private:
 	Board board;
 	Searcher searcher;

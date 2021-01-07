@@ -46,7 +46,7 @@ void UCIProtocolHandler::run() {
 				engine->setBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 			}
 
-			if (parts[index] == "moves") {
+			if (index < parts.size() && parts[index] == "moves") {
 				for (index = index + 1; index < parts.size(); index++) {
 					engine->doMove(parts[index]);
 				}
@@ -81,6 +81,10 @@ void UCIProtocolHandler::run() {
 		}
 		else if (parts[0] == "quit") {
 			quit = true;
+		}
+		// custom debug commands
+		else if (parts[0] == "debug_board") { 
+			engine->showBoardDebug();
 		}
 	}
 }

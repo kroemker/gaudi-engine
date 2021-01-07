@@ -59,7 +59,8 @@ public:
 
 	static char getFileBySquare(int square);
 	static char getRankBySquare(int square);
-	int getSquareFromString(std::string str);
+	static int getSquareFromString(std::string str);
+	static std::string getStringFromSquare(int sq);
 	static char getCharOfPiece(Piece::PieceType type);
 	static Piece::PieceType getPieceTypeFromChar(char type);
 	static int convert88To64Square(int square0x88);

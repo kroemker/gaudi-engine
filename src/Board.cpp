@@ -131,17 +131,18 @@ void Board::loadFEN(std::string fen) {
 		enpassantFile = fen[i] - 'a';
 	}
 	i++;
-	i++;
 
 	if (enpassantFile >= 0) {
 		enpassantRank = fen[i] - '1';
+		i++;
 	}
+	i++;
 
 	refillBoardByPieceList();
 
 	if (enpassantFile >= 0) {
 		enpassantSquare = enpassantFile + enpassantRank * 16;
-		enpassantPiece = enpassantRank == 3 ? board[enpassantSquare + 16] : board[enpassantRank - 16];
+		enpassantPiece = enpassantRank == 3 ? board[enpassantSquare + 16] : board[enpassantSquare - 16];
 	}
 
 	zobristHasher.hashNew();
@@ -736,6 +737,14 @@ char Board::getRankBySquare(int square) {
 
 int Board::getSquareFromString(std::string str) {
 	return str[0] - 'a' + 16 * (str[1] - '1');
+}
+
+std::string Board::getStringFromSquare(int sq) {
+	char ssq[3];
+	ssq[0] = getFileBySquare(sq);
+	ssq[1] = getRankBySquare(sq);
+	ssq[2] = 0;
+	return std::string(ssq);
 }
 
 char Board::getCharOfPiece(Piece::PieceType type) {

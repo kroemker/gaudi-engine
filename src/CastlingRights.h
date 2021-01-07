@@ -59,6 +59,17 @@ public:
 		return rights;
 	}
 
+	std::string getString() {
+		char arr[5];
+		arr[0] = canCastleKingside(Color::WHITE) ? 'K' : '-';
+		arr[1] = canCastleQueenside(Color::WHITE) ? 'Q' : '-';
+		arr[2] = canCastleKingside(Color::BLACK) ? 'k' : '-';
+		arr[3] = canCastleQueenside(Color::BLACK) ? 'q' : '-';
+		arr[4] = 0;
+
+		return std::string(arr);
+	}
+
 private:
 	static const u8 KINGSIDE = 0x02;
 	static const u8 QUEENSIDE = 0x01;
